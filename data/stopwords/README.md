@@ -7,7 +7,6 @@
 | 百度停用词表                   | baidu\_stopwords.txt |
 | 四川大学机器智能实验室停用词库 | scu\_stopwords.txt   |
 
+https://github.com/goto456/stopwords
 
-请吃辣条
-
-![](https://raw.githubusercontent.com/goto456/markdown-pictures/master/wengeblog/wechat_pay2.jpg)
+https://blog.csdn.net/u010533386/article/details/51458591
