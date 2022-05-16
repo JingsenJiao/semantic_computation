@@ -5,6 +5,7 @@ import os
 if __name__ == "__main__":
     file_dir = "data/stopwords"
     filenames = ["baidu_stopwords.txt", "cn_stopwords.txt", "hit_stopwords.txt", "scu_stopwords.txt"]
+    # 把上面所有文件中的停用词汇总，去除重复的，保存到下面的文件
     output_filename = "stopwords.txt"
     # stopwords = {'\u3000', '\n', ' '}
     stopwords = set()
