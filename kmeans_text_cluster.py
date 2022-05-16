@@ -28,61 +28,65 @@ if not os.path.exists(figureDir):
 all_file = os.listdir(inputDir)  # 获取文件夹中所有文件名
 labels = []  # 用以存储文档名称
 corpus = []  # 语料库
-# size = 200  # 测试集容量
+# size = 200   # 测试集容量
 size = len(all_file)
 
 
-def buildSW():
+def build_stopwords():
     """停用词的建立"""
     # typetxt = open('data/stopwords/中文停用词_csdn.txt', encoding="utf-8")  # 停用词文档地址
     typetxt = open('data/stopwords/stopwords.txt', encoding="utf-8")  # 停用词文档地址
-    texts = ['\u3000', '\n', ' ']  # 爬取的文本中未处理的特殊字符，u3000 是全角的空白符
+    stopwords = ['\u3000', '\n', ' ']  # 特殊字符，u3000 是全角的空白符
     '''停用词库的建立'''
     for word in typetxt:
         word = word.strip()
-        texts.append(word)
+        stopwords.append(word)
     typetxt.close()
-    return texts
+    return stopwords
 
 
-def buildWB(texts):
+def build_corpus(stopwords):
     """语料库的建立"""
     for i in range(0, len(all_file)):
         filename = all_file[i]
         filelabel = filename.split('.')[0]
-        labels.append(filelabel)  # 名称列表
+        labels.append(filelabel)  # 文件名称列表
+
         file_add = os.path.join(inputDir, filename)  # 文档的路径
-        doc = open(file_add, encoding='utf-8').read()
-        data = jieba.cut(doc)  # 文本分词
+        doc = open(file_add, encoding='utf-8')
+        data = jieba.cut(doc.read())  # 文本分词
+        doc.close()
+
         data_adj = ''
         delete_word = []
         for item in data:
-            if item not in texts:  # 停用词过滤
+            if item not in stopwords:  # 停用词过滤
                 # data_adj += item + ' '
-                # value=re.compile(r'^[0-9]+$')#去除数字
+                # value = re.compile(r'^[0-9]+$')  # 去除数字
                 value = re.compile(r'^[\u4e00-\u9fa5]{2,}$')  # 只匹配中文2字词以上
                 if value.match(item):
                     data_adj += item + ' '
             else:
                 delete_word.append(item)
-        corpus.append(data_adj)  # 语料库建立完成
+        corpus.append(data_adj)  # 将该文档内的词加入语料库
+
         processed_file = os.path.join(processDir, filename)
         processed_doc = open(processed_file, 'w', encoding='utf-8')
-        print(data_adj, file=processed_doc)
+        print(data_adj, file=processed_doc)     # 将处理后的文本写入文件
         processed_doc.close()
     # print(corpus)
     return corpus
 
 
-def countIdf(corpus):
+def count_tfidf(corpus):
     # 分词向量化
-    vectorizer = CountVectorizer()      # 该类会将文本中的词语转换为词频矩阵，矩阵元素a[i][j] 表示j词在i类文本下的词频
+    vectorizer = CountVectorizer()                  # 该类会将文本中的词语转换为词频矩阵，矩阵元素a[i][j] 表示j词在i类文本下的词频
     word_vec = vectorizer.fit_transform(corpus)     # 将文本转为词频矩阵
 
     # 提取 TF-IDF 词向量
-    transformer = TfidfTransformer()    # 该类会统计每个词语的tf-idf权值
+    transformer = TfidfTransformer()                # 该类会统计每个词语的tf-idf权值
     tfidf = transformer.fit_transform(word_vec)     # 计算tf-idf
-    tfidf_matrix = tfidf.toarray()      # 将tf-idf矩阵抽取出来，元素a[i][j]表示j词在i类文本中的tf-idf权重
+    tfidf_matrix = tfidf.toarray()                  # 将tf-idf矩阵抽取出来，元素a[i][j]表示j词在i类文本中的tf-idf权重
     print("TF-IDF 矩阵的维数：{}".format(tfidf_matrix.shape))
 
     # tsne 降维
@@ -107,7 +111,7 @@ def Kmeans(weight, clusters, correct):
     y = mykms.fit_predict(weight)
     result = []
 
-    # 打印出各个族的中心点
+    # 打印出各个簇的中心点
     print(kmeans.cluster_centers_)
     print(kmeans.cluster_centers_.shape)
     # for index, label in enumerate(kmeans.labels_, 1):
@@ -133,7 +137,7 @@ def Kmeans(weight, clusters, correct):
         text_cls = []
         for file, res in zip(all_file, y):
             if res == k:
-                text = open(os.path.join(processDir, file), encoding='utf-8')
+                text = open(os.path.join(processDir, file), encoding='utf-8')     # 用处理后的文件
                 text_cls.append(text.read())
                 text.close()
         text_join = ''.join(line for line in text_cls)
@@ -204,9 +208,8 @@ def output(result, outputDir, clusters):
 
 def generate_wordclouds(text, out_file):
     # 设置停用词
-    stopwords = set(STOPWORDS)      # wordcloud 自带的停用词只有英文
-    # stopwords.add(r"weapon")
-    # stopwords.add(r"huanqiu")
+    # stopwords = set(STOPWORDS)      # 这是 wordcloud 自带的停用词，只有英文
+    stopwords = set(build_stopwords())
 
     # 指定字体为中文
     font = r'C:\Windows\Fonts\msyh.ttc'
@@ -217,17 +220,23 @@ def generate_wordclouds(text, out_file):
     words.to_file(out_file)
 
 
-texts = buildSW()
-corpus = buildWB(texts)
-weight = countIdf(corpus)
+stopwords = build_stopwords()
+corpus = build_corpus(stopwords)
+weight = count_tfidf(corpus)
 clusters = 4
 correct = [0]  # 正确量
 result = Kmeans(weight, clusters, correct)
 output(result, outputDir, clusters)
 
-# 显示散点图
+# 显示聚类前散点图
+plt.figure(figsize=(20, 20))
+plt.scatter(weight[:, 0], weight[:, 1], s=80, c='black', marker='o')
+plt.title('Input data')
+plt.show()
+
+# 显示聚类后散点图
 img = Image.open(os.path.join(figureDir, 'kmeans.png'))
-plt.figure(figsize=(20, 16))
+plt.figure(figsize=(20, 20))
 plt.imshow(img)
 plt.axis('off')         # 关掉坐标轴为 off
 plt.title('Cluster Result')
