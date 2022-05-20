@@ -37,11 +37,13 @@ def eval_kmeans(tfidf_matrix):
     # Extract best score and optimal number of clusters
     num_clusters = np.argmax(scores) + values[0]
     print('\nOptimal number of clusters =', num_clusters)
+    return num_clusters
 
 
 if __name__ == "__main__":
     stopwords = kmeans_text_cluster.build_stopwords()
     corpus = kmeans_text_cluster.build_corpus(stopwords)
+    # corpus = kmeans_text_cluster.load_corpus('data/THUCNews_custom_processed')
     weight = kmeans_text_cluster.count_tfidf(corpus)
 
     eval_kmeans(weight)

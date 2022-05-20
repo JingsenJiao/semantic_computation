@@ -49,9 +49,6 @@ def build_corpus(stopwords):
     """语料库的建立"""
     for i in range(0, len(all_file)):
         filename = all_file[i]
-        filelabel = filename.split('.')[0]
-        labels.append(filelabel)  # 文件名称列表
-
         file_add = os.path.join(inputDir, filename)  # 文档的路径
         doc = open(file_add, encoding='utf-8')
         data = jieba.cut(doc.read())  # 文本分词
@@ -68,13 +65,26 @@ def build_corpus(stopwords):
                     data_adj += item + ' '
             else:
                 delete_word.append(item)
-        corpus.append(data_adj)  # 将该文档内的词加入语料库
+        corpus.append(data_adj)  # 将该文档内的词加入语料库，corpus的元素数量就是总文档数，其中每个元素为该文档内的所有词(词间以空格分隔)
 
         processed_file = os.path.join(processDir, filename)
         processed_doc = open(processed_file, 'w', encoding='utf-8')
         print(data_adj, file=processed_doc)     # 将处理后的文本写入文件
         processed_doc.close()
     # print(corpus)
+    # print(len(corpus))
+    return corpus
+
+
+def load_corpus(processDir):
+    """语料库的加载，如果已经有了处理好的文件，使用该方法可以节省运行时间"""
+    corpus = []
+    for filename in os.listdir(processDir):
+        doc = open(os.path.join(processDir, filename), encoding='utf-8')
+        corpus.append(doc.read().strip())
+        doc.close()
+    # print(corpus)
+    # print(len(corpus))
     return corpus
 
 
@@ -155,7 +165,13 @@ def Kmeans(weight, clusters, correct):
         plt.text(weight[i, 0], weight[i, 1] + 0.01, '%d' % y[i], ha='center', va='bottom', fontsize=7)
     for i in range(clusters):
         plt.scatter(kmeans.cluster_centers_[i, 0], kmeans.cluster_centers_[i, 1], c='k', marker='x', linewidths=5)
+    # fig.show()
     fig.savefig('data/figure/kmeans.png', transparent=False, dpi=100, bbox_inches="tight")
+
+    for i in range(0, len(all_file)):
+        filename = all_file[i]
+        filelabel = filename.split('.')[0]
+        labels.append(filelabel)  # 文件名称列表
 
     # 统计结果
     for i in range(0, clusters):
@@ -220,35 +236,36 @@ def generate_wordclouds(text, out_file):
     words.to_file(out_file)
 
 
-stopwords = build_stopwords()
-corpus = build_corpus(stopwords)
-weight = count_tfidf(corpus)
-clusters = 4
-correct = [0]  # 正确量
-result = Kmeans(weight, clusters, correct)
-output(result, outputDir, clusters)
+if __name__ == "__main__":
+    stopwords = build_stopwords()
+    corpus = build_corpus(stopwords)
+    # corpus = load_corpus(processDir)
+    weight = count_tfidf(corpus)
+    clusters = 4
+    correct = [0]  # 正确量
+    result = Kmeans(weight, clusters, correct)
+    output(result, outputDir, clusters)
 
-# 显示聚类前散点图
-plt.figure(figsize=(20, 20))
-plt.scatter(weight[:, 0], weight[:, 1], s=80, c='black', marker='o')
-plt.title('Input data')
-plt.show()
+    # 显示聚类前散点图
+    plt.figure(figsize=(10, 10))
+    plt.scatter(weight[:, 0], weight[:, 1], c='black', marker='o')
+    plt.show()
 
-# 显示聚类后散点图
-img = Image.open(os.path.join(figureDir, 'kmeans.png'))
-plt.figure(figsize=(20, 20))
-plt.imshow(img)
-plt.axis('off')         # 关掉坐标轴为 off
-plt.title('Cluster Result')
-plt.show()
-
-# 显示词云图
-plt.figure(figsize=(20, 20))
-for i in range(4):
-    img = Image.open(os.path.join(figureDir, str(i)+'.png'))
-    plt.subplot(2, 2, i+1)
+    # 显示聚类后散点图
+    img = Image.open(os.path.join(figureDir, 'kmeans.png'))
+    plt.figure(figsize=(20, 20))
     plt.imshow(img)
-    plt.axis('off')     # 关掉坐标轴为 off
-plt.show()
+    plt.axis('off')         # 关掉坐标轴为 off
+    plt.title('Cluster Result')
+    plt.show()
 
-print('finish')
+    # 显示词云图
+    plt.figure(figsize=(20, 20))
+    for i in range(4):
+        img = Image.open(os.path.join(figureDir, str(i)+'.png'))
+        plt.subplot(2, 2, i+1)
+        plt.imshow(img)
+        plt.axis('off')     # 关掉坐标轴为 off
+    plt.show()
+
+    print('finish')
