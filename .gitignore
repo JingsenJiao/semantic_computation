@@ -1,4 +1,7 @@
 .idea
 data/output
+data/output_test
 data/THUCNews_custom
 data/THUCNews_custom_processed
+data/THUCNews_test
+data/THUCNews_test_processed
